@@ -4664,14 +4664,15 @@ class World:
             723: [0, 181, 182, 0, [[724, 1]], True],  # SW Top (81) C<->W via worm orb
             133: [0, 168, 182, 0, [[506, 1]], True],  # SW Top progression w/ switch 1
             134: [0, 182, 183, 0, [[507, 1]], True],  # SW Top progression w/ switch 2
-            135: [0, 182, 184, 0, [[608, 1]], True],  # SW Top break statues w/ Will ability
+            135: [0, 182, 184, 0, [[608, 1]], True],  # SW Top SW->SE, break statues w/ Will ability
             138: [0, 184, 185, 0, [[508, 1], [608, 1]], False],  # SW Top ramp chest w/ switch 3 & Will ability
             141: [0, 181, 182, 0, [[63, 1]], False],  # SW Top (81) ramps w/ Spin Dash
             142: [0, 181, 184, 0, [[63, 1]], False],  # SW Top (81) ramps w/ Spin Dash
             143: [0, 182, 185, 0, [[63, 1]], False],  # SW Top (81) ramps w/ Spin Dash
-            601: [0, 181, 182 if settings.allow_glitches else 181, 0, [], False],  # SW Top (81) ramps w/ glitches
-            602: [0, 181, 184 if settings.allow_glitches else 181, 0, [], False],  # SW Top (81) ramps w/ glitches
-            603: [0, 182, 185 if settings.allow_glitches else 182, 0, [], False],  # SW Top (81) ramps w/ glitches
+            601: [0, 181, 182 if settings.allow_glitches else 181, 0x01, [], False],
+            # SW Top (81) C->SW via ramp glitch jump
+            603: [0, 182, 185 if settings.allow_glitches else 182, 0x01, [], False],
+            # SW Top (81) SW->chest via ramp glitch jump
             739: [0, 187, 508, 0, [[725, 1], [609, 1], [612, 1]], False],
             # SW Bot (82) switch via fire cage orb, attack, and telekinesis
             144: [0, 188, 189, 0x06, [], False],  # SW Bot (82) cage switch w/ reach
