@@ -7035,10 +7035,14 @@ warnpc $85f45e
 
 ; Move the memory block used by the spotlight, so it doesn't interfere with other effects
 if !SettingDarkRoomsLevel != 0
+org $85fb26
+dl $7ef000   ; (credits map)
+org $85fb2d
+dl $7ef100   ; (credits map)
 org $85fb4d
-dl $7ef000
+dl $7ef000   ; (normal maps)
 org $85fb54
-dl $7ef100
+dl $7ef100   ; (normal maps)
 org $85fe64
 lda #$f600 : sta $0000
 lda #$f000 : sta $0002
