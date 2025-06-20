@@ -970,7 +970,7 @@ ActorList_Map29:    ; Castoth.
 db $05,$0A,$30 : dl $82C38C : db $00
 db $00,$00,$00 : dl $80EAED : db $00
 db $11,$11,$00 : dl $80EA96 : db $00
-db $07,$11,!Monster00CDParam : dl !Monster00CDAddr : db !Monster00CDStats,$88,!Monster00CDItemFlag
+db $07,$11,!Monster00CDParam : dl !Monster00CDAddr : db !Monster00CDStats,$00,!Monster00CDItemFlag
 db $00,$01,$00 : dl $89CF86 : db $00
 db $00,$01,$01 : dl $80C2BB : db $00
 db $FF,$CA 

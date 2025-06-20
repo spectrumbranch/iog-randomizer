@@ -12,7 +12,7 @@ from .errors import OffsetError
 from .models.enums import *
 from .models.randomizer_data import RandomizerData
 
-VERSION = "5.1.5.2"
+VERSION = "5.1.5.3"
 MAX_RANDO_RETRIES = 50
 OUTPUT_FOLDER: str = os.path.dirname(os.path.realpath(
     __file__)) + os.path.sep + ".." + os.path.sep + ".." + os.path.sep + "data" + os.path.sep + "output" + os.path.sep
@@ -378,19 +378,19 @@ class Randomizer:
         # - The top of Babel leads to the dungeon of MQ2
         # - Rama Statues are required by the Mu boss, not by Vamps
         # - S exit from Vamp statue room returns to the dungeon of Vamps
+        # - In RJH, the Mansion boss can't be Castoth (due to locking out the Gold Ship item)
         boss_order = [*range(1, 8)]
         if settings.boss_shuffle:
             non_will_bosses = [5]  # Never forced to play Mummy Queen as Will
+            # Can't beat Castoth as Will without Flute (or generous ability shuffle and lots of patience)
             if settings.flute.value == FluteOpt.FLUTELESS.value:
-                # Can't beat Castoth as Will without Flute (or generous ability shuffle and lots of patience)
                 non_will_bosses.append(1)
-            if settings.difficulty.value < 3:  # For non-Extreme seeds:
-                boss_order.remove(7)  # - Don't shuffle Solid Arm at all;
-                if settings.flute.value == FluteOpt.FLUTELESS.value:
-                    non_will_bosses.append(3)  # - Don't require fluteless Vamps.
-            if settings.difficulty.value < 2:  # Also, in Easy/Normal, can't be forced to play Vampires as Will
-                if 3 not in non_will_bosses:
-                    non_will_bosses.append(3)
+            # Solid Arm only shuffles in Extreme non-RJH seeds
+            if settings.difficulty.value < 3 or settings.goal.value is Goal.RED_JEWEL_HUNT.value:
+                boss_order.remove(7)
+            # Vamps: as Will only allowed for Hard/Extreme; fluteless only allowed for Extreme
+            if (settings.difficulty.value < 2) or (settings.difficulty.value < 3 and settings.flute.value == FluteOpt.FLUTELESS.value):
+                non_will_bosses.append(3)
             random.shuffle(non_will_bosses)
 
             # Determine statue order, ensuring that non-Will bosses aren't in Will-only rooms

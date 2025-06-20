@@ -1255,7 +1255,7 @@ class World:
         for island in skeleton:
             num_openings += len(island[1])
         if (num_deadends - num_openings) % 2 == 1:
-            # Discard one deadend and one Nothing to match parity of deadends to openings
+            # Discard one deadend (442) and one Nothing to match parity of deadends to openings
             # (though I don't think this state is possible in IOG if the above code works)
             if any(442 in x[0] for x in skeleton):
                 discard_island = next(x for x in skeleton if 442 in x[0])
@@ -1393,11 +1393,6 @@ class World:
                     one_way_exits.append(x)
                 self.graph[self.exits[x][3]][14].append(x)
                 self.graph[self.exits[x][4]][15].append(x)
-
-        # Don't randomize Jeweler's final exit in RJH seeds
-        if self.goal == "Red Jewel Hunt":
-            self.link_exits(720, 720, False)
-            self.link_exits(721, 721, False)
 
         # Special case for Slider exits in Angel Dungeon
         if self.dungeon_shuffle:  # != "None":
@@ -1910,7 +1905,7 @@ class World:
         elif self.kara == 5:
             self.required_items += [28, 66]
         
-        # Save "disallowed" items per location (ignored in Chaos logic):
+        # Save soft-disallowed items per location (ignored in Chaos logic):
         # No non-W abilities in towns
         non_w_abilities = [item for item in self.form_items[1] + self.form_items[2] if self.item_pool[item][6] == 2]
         for loc in self.spawn_locations:
@@ -2130,6 +2125,38 @@ class World:
                 unused_items.append(604)
                 free_items.append(611)
 
+        # Statue/Endgame logic
+        if self.goal == "Red Jewel Hunt":
+            unused_edges.extend([406, 407])
+            # Mansion is inaccessible, so can't have nontrivial items.
+            self.unfill_item(147) # Mansion chest
+            unused_locs.append(147)
+            if self.item_pool[0][0] > 0:
+                self.item_pool[0][0] -= 1
+                self.fill_item(0, 147, False, True)
+            else:
+                self.item_pool[6][0] -= 1
+                self.fill_item(6, 147, False, True)
+            for orb in [740, 741]:
+                unused_locs.append(orb)
+                free_items.append(orb)
+        else:
+            for x in self.statues:
+                self.logic[406][4][x][1] = 1
+            if self.statue_req == StatueReq.PLAYER_CHOICE.value:
+                self.item_pool[106][0] = 6
+                unused_items.extend([100, 101, 102, 103, 104, 105])
+            else:
+                unused_items.append(106)
+
+        # Remove Jeweler edges that require more RJ items than exist, to help the traverser
+        if self.gem[6] > self.item_pool[1][0]:
+            unused_edges.append(24)
+            if self.gem[6] > 2 + self.item_pool[1][0]:
+                unused_edges.append(25)
+                if self.gem[6] > 3 + self.item_pool[1][0]:
+                    unused_edges.append(26)
+
         # Decompose bidirectional and artificial-item edges to unidirectional with real items;
         # the former are easier to maintain, the latter allow simpler code
         bidirectional_edges = [edge for edge in self.logic if self.logic[edge][5] and edge not in unused_edges]
@@ -2200,28 +2227,6 @@ class World:
                     self.logic[new_edge_id] = [self.logic[edge][0], self.logic[edge][1], self.logic[edge][2], 0,
                                                self.logic[edge][4][:] + [[604, 1]], self.logic[edge][5]]
 
-        # Statue/Endgame logic
-        if self.goal == "Red Jewel Hunt":
-            for jeweler_final_edge in [24, 25, 26, 27]:
-                self.logic[jeweler_final_edge][2] = 492
-            unused_edges.extend([406, 407])
-        else:
-            for x in self.statues:
-                self.logic[406][4][x][1] = 1
-            if self.statue_req == StatueReq.PLAYER_CHOICE.value:
-                self.item_pool[106][0] = 6
-                unused_items.extend([100, 101, 102, 103, 104, 105])
-            else:
-                unused_items.append(106)
-
-        # Remove Jeweler edges that require more RJ items than exist, to help the traverser
-        if self.gem[6] > self.item_pool[1][0]:
-            unused_edges.append(24)
-            if self.gem[6] > 2 + self.item_pool[1][0]:
-                unused_edges.append(25)
-                if self.gem[6] > 3 + self.item_pool[1][0]:
-                    unused_edges.append(26)
-
         # Dungeon Shuffle.
         # Clean up unused nodes and artificial items
         if not self.dungeon_shuffle:  # if self.dungeon_shuffle == "None" or self.dungeon_shuffle == "Basic":
@@ -2288,7 +2293,7 @@ class World:
                 self.graph[self.logic[y][1]][12].append(y)
                 self.graph[self.logic[y][2]][13].append(y)
 
-        # Boss Shuffle -- boss_order[n] is the boss of dungeon n, 0<=n<=6, 1<=boss<=7
+        # Boss Shuffle: boss_order[n] is the boss of dungeon n, 0<=n<=6, 1<=boss<=7
         if "Boss Shuffle" in self.variant:
             boss_door_exits = [1, 4, 7, 10, 13, 16, 19]
             boss_defeat_exits = [3, 6, 9, 12, 15, 18, 21]
@@ -2301,6 +2306,9 @@ class World:
                 normal_defeat_exit = boss_defeat_exits[dungeon]
                 new_defeat_exit = boss_defeat_exits[this_dungeon_boss - 1]
                 self.link_exits(new_defeat_exit, normal_defeat_exit)
+                # In RJH, don't path through the inaccessible Mansion boss
+                if self.goal == "Red Jewel Hunt" and dungeon == 6:
+                    self.exits[new_defeat_exit][4] = self.exits[new_defeat_exit][3]
 
         # Cache the number of item pools, and create empty loc lists for them
         self.item_pool_count = 1 + self.get_max_pool_id()
@@ -2634,7 +2642,7 @@ class World:
         self.update_graph()
         self.traverse([])  # Fresh traverse with no nodes queued to visit
 
-        if self.logic_mode == "Completable" and self.goal != "Red Jewel Hunt":
+        if self.logic_mode == "Completable":
             completed = all(self.graph[node][0] for node in self.graph if node not in self.optional_nodes)
         else:
             completed = self.graph[492][0]
@@ -4581,10 +4589,10 @@ class World:
             21: [0, 6, 7, 0, [[1, gem[5] - 2], [41, 1]], False],
             22: [0, 6, 7, 0, [[1, gem[5] - 3], [42, 1]], False],
             23: [0, 6, 7, 0, [[1, gem[5] - 5], [41, 1], [42, 1]], False],
-            24: [0, 7, 8, 0, [[1, gem[6]]], False],  # Jeweler Reward 7 (Mansion)
-            25: [0, 7, 8, 0, [[1, gem[6] - 2], [41, 1]], False],
-            26: [0, 7, 8, 0, [[1, gem[6] - 3], [42, 1]], False],
-            27: [0, 7, 8, 0, [[1, gem[6] - 5], [41, 1], [42, 1]], False],
+            24: [0, 7, 492 if self.goal == "Red Jewel Hunt" else 8, 0, [[1, gem[6]]], False],  # Jeweler Reward 7 (Mansion)
+            25: [0, 7, 492 if self.goal == "Red Jewel Hunt" else 8, 0, [[1, gem[6] - 2], [41, 1]], False],
+            26: [0, 7, 492 if self.goal == "Red Jewel Hunt" else 8, 0, [[1, gem[6] - 3], [42, 1]], False],
+            27: [0, 7, 492 if self.goal == "Red Jewel Hunt" else 8, 0, [[1, gem[6] - 5], [41, 1], [42, 1]], False],
 
             # Inter-Continental Travel
             30: [0, 28, 15, 0, [[37, 1]], False],  # South Cape: Erik w/ Lola's Letter
@@ -4811,8 +4819,10 @@ class World:
             # (Early) Firebird w/ Kara, Aura, Ring, and the setting
             406: [0, 490, 492, 0x0f, [[36, 1], [100, 0], [101, 0], [102, 0], [103, 0], [104, 0], [105, 0]], False],
             # Beat Game w/Statues and Aura
-            407: [0, 490, 492, 0x0f, [[36, 1], [106, self.statues_required]], False]
+            407: [0, 490, 492, 0x0f, [[36, 1], [106, self.statues_required]], False],
             # Beat Game w/Statues and Aura (player choice)
+            # RJH: link goal to inaccessible Mansion entrance for completability
+            408: [0, 492, 8 if self.goal == "Red Jewel Hunt" else 492, 0, [], False]
         }
 
         # Define addresses for in-game spoiler text
@@ -7457,8 +7467,8 @@ class World:
             709: [708, 0, 0, 0, 0, "", 0, False, 11, 0, "Babel: Olman room exit (222->227)"],
 
             # Jeweler's Mansion
-            720: [721, 0, 0, 8, 480, "MapMansionEntranceString", 0, False, 12, 1, "Mansion entrance"],
-            721: [720, 0, 0, 480, 400, "MapMansionExitString", 0, False, 12, 1, "Mansion exit"]
+            720: [721, 0, 0, 8, 480, "MapMansionEntranceString", 0, False, 12, 0 if self.goal == "Red Jewel Hunt" else 1, "Mansion entrance"],
+            721: [720, 0, 0, 480, 480 if self.goal == "Red Jewel Hunt" else 400, "MapMansionExitString", 0, False, 12, 0 if self.goal == "Red Jewel Hunt" else 1, "Mansion exit"]
         }
 
         # Logic requirements for exits to be traversable. For more complex logic, manually create an artificial node.
