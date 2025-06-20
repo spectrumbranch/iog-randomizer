@@ -9737,6 +9737,13 @@ cop #$CA : db $08
   cop #$C1
   cop #$8B
 cop #$CB
+jsl LR_GetDsItemForOuterMapOrSec : and #$ff00 : cmp #$1100 : bne +
+  ; "Give" abilities immediately
+  jsl LR_GetDsItemForOuterMapOrSec : and #$00ff : cmp #$0003 : bcc ++
+    inc   ; So "items" 3-5 map to flags ..4-6
+  ++:
+  clc : adc #$0510 : jsl LR_SetAnyFlagA
++:
 cop #$86 : db $0A, $03, $14
 cop #$8A
 cop #$84 : db $0A, $03
