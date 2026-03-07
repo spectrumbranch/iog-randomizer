@@ -3,6 +3,7 @@ import random
 import tkinter
 import tkinter.filedialog
 import tkinter.messagebox
+import traceback
 
 import bsdiff4
 import ips
@@ -377,7 +378,8 @@ def generate_ROM():
     except RomNotFoundError:
         tkinter.messagebox.showerror("ERROR", "ROM file does not exist")
     except Exception as e:
-        tkinter.messagebox.showerror("ERROR", str(e))
+        traceback.print_exc()
+        tkinter.messagebox.showerror("ERROR (unhandled)", str(e))
 
 
 def write_text_file(text, filename, rom_path):
