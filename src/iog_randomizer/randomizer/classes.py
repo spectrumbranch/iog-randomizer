@@ -14,12 +14,12 @@ from .data.enemy_sets import ENEMY_SETS
 from .data.exit_logic import get_exit_logic
 from .data.exits import get_exits
 from .data.form_items import FORM_ITEMS
-from .data.graph import GRAPH
-from .data.item_locations import ITEM_LOCATIONS
+from .data.graph import get_graph
+from .data.item_locations import get_item_locations
 from .data.item_pool import get_item_pool
 from .data.logic import get_logic
-from .data.maps import MAPS
-from .data.overworld_menus import OVERWORLD_MENUS
+from .data.maps import get_maps
+from .data.overworld_menus import get_overworld_menus
 from .data.spawn_locations import get_spawn_locations
 from .data.spoiler_labels import SPOILER_LABELS
 
@@ -60,12 +60,12 @@ class World:
         val_messages = []
         val_success = True
         placed_item_counts = {}
-        for loc in ITEM_LOCATIONS:
-            if ITEM_LOCATIONS[loc][1] not in [1,2,3,5]:
+        for loc in self.item_locations:
+            if self.item_locations[loc][1] not in [1,2,3,5]:
                 continue
-            item = ITEM_LOCATIONS[loc][3]
-            loc_pool = ITEM_LOCATIONS[loc][7]
-            if item == 0 and ITEM_LOCATIONS[loc][1] == 2:
+            item = self.item_locations[loc][3]
+            loc_pool = self.item_locations[loc][7]
+            if item == 0 and self.item_locations[loc][1] == 2:
                 continue
             if self.item_pool[item][6] == 0 and loc_pool == 0:
                 continue
@@ -90,7 +90,7 @@ class World:
         if self.orb_rando != "None" and not self.dungeon_shuffle:
             # Check whether certain problem orbs are locked behind themselves
             for eddg_end_loc in [17, 18, 19, 705, 706]:
-                if eddg_end_loc in ITEM_LOCATIONS and ITEM_LOCATIONS[eddg_end_loc][3] == 704:
+                if eddg_end_loc in self.item_locations and self.item_locations[eddg_end_loc][3] == 704:
                     val_success = False
                     val_messages.append("Orb val error: EdDg DS orb is inaccessible")
                     break
@@ -102,43 +102,43 @@ class World:
     def fill_item(self, item, location=-1, test=False, override_restrictions=False):
         if location == -1:
             return False
-        elif not test and ITEM_LOCATIONS[location][2]:
+        elif not test and self.item_locations[location][2]:
             self.verbose("Tried to place an item in a full location: " + str(self.item_pool[item][3]) + " " + str(
-                ITEM_LOCATIONS[location][6]))
+                self.item_locations[location][6]))
             return False
-        elif not test and item in ITEM_LOCATIONS[location][4] and not override_restrictions:
+        elif not test and item in self.item_locations[location][4] and not override_restrictions:
             self.verbose("Tried to place item in a restricted location: " + str(self.item_pool[item][3]) + " " + str(
-                ITEM_LOCATIONS[location][6]))
+                self.item_locations[location][6]))
             return False
         elif test:
             return True
 
         self.item_pool[item][0] -= 1
-        ITEM_LOCATIONS[location][2] = True
-        ITEM_LOCATIONS[location][3] = item
+        self.item_locations[location][2] = True
+        self.item_locations[location][3] = item
 
-        self.verbose("  " + str(self.item_pool[item][3]) + " -> " + str(ITEM_LOCATIONS[location][6]))
+        self.verbose("  " + str(self.item_pool[item][3]) + " -> " + str(self.item_locations[location][6]))
 
-        if self.is_accessible(ITEM_LOCATIONS[location][0]):
+        if self.is_accessible(self.item_locations[location][0]):
             self.items_collected.append(item)
-            self.open_locations[ITEM_LOCATIONS[location][7]].remove(location)
+            self.open_locations[self.item_locations[location][7]].remove(location)
 
         self.placement_log.append([item, location])
         return True
 
     # Removes an assigned item and returns it to item pool
     def unfill_item(self, location=-1):
-        if location not in ITEM_LOCATIONS or not ITEM_LOCATIONS[location][2]:
+        if location not in self.item_locations or not self.item_locations[location][2]:
             return -1
 
-        item = ITEM_LOCATIONS[location][3]
-        ITEM_LOCATIONS[location][2] = False
-        ITEM_LOCATIONS[location][3] = 0
+        item = self.item_locations[location][3]
+        self.item_locations[location][2] = False
+        self.item_locations[location][3] = 0
         self.item_pool[item][0] += 1
 
-        self.verbose("  " + str(self.item_pool[item][3]) + "<-" + str(ITEM_LOCATIONS[location][6]) + " removed")
+        self.verbose("  " + str(self.item_pool[item][3]) + "<-" + str(self.item_locations[location][6]) + " removed")
 
-        if self.is_accessible(ITEM_LOCATIONS[location][0]):
+        if self.is_accessible(self.item_locations[location][0]):
             if item in self.items_collected:
                 self.items_collected.remove(item)
             pool = self.get_pool_id(item=item)
@@ -157,8 +157,8 @@ class World:
         if type < 0:
             if item in self.item_pool:
                 type = self.item_pool[item][1]
-            elif loc in ITEM_LOCATIONS:
-                type = ITEM_LOCATIONS[loc][1]
+            elif loc in self.item_locations:
+                type = self.item_locations[loc][1]
             else:
                 return 0
         if type == 1:
@@ -198,7 +198,7 @@ class World:
                         for _ in range(self.item_pool[x][0]):
                             item_list.append(x)
                         if incl_placed:
-                            for _ in [loc for loc in ITEM_LOCATIONS if ITEM_LOCATIONS[loc][3] == x]:
+                            for _ in [loc for loc in self.item_locations if self.item_locations[loc][3] == x]:
                                 item_list.append(x)
         return item_list
 
@@ -216,15 +216,15 @@ class World:
                         for _ in range(self.item_pool[x][0]):
                             item_list.append(x)
                         if incl_placed:
-                            for _ in [loc for loc in ITEM_LOCATIONS if ITEM_LOCATIONS[loc][3] == x]:
+                            for _ in [loc for loc in self.item_locations if self.item_locations[loc][3] == x]:
                                 item_list.append(x)
         return item_list
 
     # Returns all item locations
     def list_item_locations(self, shuffled_only=True):
         locations = []
-        for x in ITEM_LOCATIONS:
-            if ITEM_LOCATIONS[x][7] or not shuffled_only:
+        for x in self.item_locations:
+            if self.item_locations[x][7] or not shuffled_only:
                 locations.append(x)
         return locations
 
@@ -251,19 +251,19 @@ class World:
 
     # Returns graph node of an item location
     def location_node(self, location_id=-1):
-        if location_id not in ITEM_LOCATIONS:
+        if location_id not in self.item_locations:
             self.error("Invalid item location " + str(location_id))
             return False
         else:
-            return ITEM_LOCATIONS[location_id][0]
+            return self.item_locations[location_id][0]
 
     # Returns whether an item location is already filled with an item
     def is_filled(self, location_id=-1):
-        if location_id not in ITEM_LOCATIONS:
+        if location_id not in self.item_locations:
             self.error("Invalid item location " + str(location_id))
             return False
         else:
-            return ITEM_LOCATIONS[location_id][2]
+            return self.item_locations[location_id][2]
 
     # Returns whether the node is within the currently-accessible subgraph
     def is_accessible(self, node_id=-1):
@@ -378,24 +378,24 @@ class World:
             return False
         items_found = []
         for location in self.graph[node][11]:
-            if ITEM_LOCATIONS[location][2]:
-                items_found.append(ITEM_LOCATIONS[location][3])
+            if self.item_locations[location][2]:
+                items_found.append(self.item_locations[location][3])
                 if not test:
-                    self.items_collected.append(ITEM_LOCATIONS[location][3])
-                self.verbose("  -Got item " + str(ITEM_LOCATIONS[location][3]) + " " + str(
-                    self.item_pool[ITEM_LOCATIONS[location][3]][3]) + " from loc " + str(location) + " " + str(
-                    ITEM_LOCATIONS[location][6]).strip() + " in node " + str(node) + " " + str(
+                    self.items_collected.append(self.item_locations[location][3])
+                self.verbose("  -Got item " + str(self.item_locations[location][3]) + " " + str(
+                    self.item_pool[self.item_locations[location][3]][3]) + " from loc " + str(location) + " " + str(
+                    self.item_locations[location][6]).strip() + " in node " + str(node) + " " + str(
                     self.graph[node][5]).strip())
             elif not test:
-                self.open_locations[ITEM_LOCATIONS[location][7]].append(location)
-                # self.verbose("  -Found empty loc "+str(location)+" "+str(ITEM_LOCATIONS[location][6]))
+                self.open_locations[self.item_locations[location][7]].append(location)
+                # self.verbose("  -Found empty loc "+str(location)+" "+str(self.item_locations[location][6]))
         return items_found
 
     # Returns full list of accessible locations
     def accessible_locations(self, item_locations):
         accessible = []
         for x in item_locations:
-            region = ITEM_LOCATIONS[x][0]
+            region = self.item_locations[x][0]
             if self.is_accessible(region):
                 accessible.append(x)
         return accessible
@@ -404,7 +404,7 @@ class World:
     def inaccessible_locations(self, item_locations):
         inaccessible = []
         for x in item_locations:
-            region = ITEM_LOCATIONS[x][0]
+            region = self.item_locations[x][0]
             if not self.is_accessible(region):
                 inaccessible.append(x)
         return inaccessible
@@ -417,14 +417,14 @@ class World:
             return False
 
         to_place = items[:]
-        to_fill = [loc for loc in item_locations[:] if not ITEM_LOCATIONS[loc][2]]
+        to_fill = [loc for loc in item_locations[:] if not self.item_locations[loc][2]]
 
         while to_place:
             item = to_place.pop(0)
             for dest in to_fill:
-                region = ITEM_LOCATIONS[dest][0]
-                filled = ITEM_LOCATIONS[dest][2]
-                restrictions = ITEM_LOCATIONS[dest][4]
+                region = self.item_locations[dest][0]
+                filled = self.item_locations[dest][2]
+                restrictions = self.item_locations[dest][4]
                 if not filled and self.are_item_loc_pooled(item, dest) and item not in restrictions:
                     if not accessible or region >= 0:
                         if self.fill_item(item, dest, False, False):
@@ -449,9 +449,9 @@ class World:
         to_fill = [[] for _ in range(self.item_pool_count)]
         loc_quarantine = [[] for _ in range(self.item_pool_count)]
         for pool in range(self.item_pool_count):
-            to_fill[pool] = [loc for loc in item_locations if ITEM_LOCATIONS[loc][7] == pool and not ITEM_LOCATIONS[loc][2] and self.is_accessible(ITEM_LOCATIONS[loc][0])]
+            to_fill[pool] = [loc for loc in item_locations if self.item_locations[loc][7] == pool and not self.item_locations[loc][2] and self.is_accessible(self.item_locations[loc][0])]
             if impose_penalty:  # Later locations are preferred by more restrictive items
-                to_fill[pool].sort(key=lambda loc: -1 * ITEM_LOCATIONS[loc][8])
+                to_fill[pool].sort(key=lambda loc: -1 * self.item_locations[loc][8])
             else:
                 random.shuffle(to_fill[pool])
         filled_locations = []
@@ -564,8 +564,8 @@ class World:
             return self.remove_nonprog(1, True)
         for node in self.visited:
             for x in self.graph[node][11]:
-                if self.is_filled(x) and ITEM_LOCATIONS[x][7] == 1 and self.item_pool[ITEM_LOCATIONS[x][3]][
-                    5] > 1 and self.item_pool[ITEM_LOCATIONS[x][3]][6] == 1:
+                if self.is_filled(x) and self.item_locations[x][7] == 1 and self.item_pool[self.item_locations[x][3]][
+                    5] > 1 and self.item_pool[self.item_locations[x][3]][6] == 1:
                     if self.unfill_item(x):
                         return True
         return False
@@ -575,10 +575,10 @@ class World:
         junk_locations = []
         quest_locations = []
 
-        for location in ITEM_LOCATIONS:
-            if ITEM_LOCATIONS[location][2] and ITEM_LOCATIONS[location][7] == 1 and self.is_accessible(
-                    ITEM_LOCATIONS[location][0]):
-                item = ITEM_LOCATIONS[location][3]
+        for location in self.item_locations:
+            if self.item_locations[location][2] and self.item_locations[location][7] == 1 and self.is_accessible(
+                    self.item_locations[location][0]):
+                item = self.item_locations[location][3]
                 prog_type = self.item_pool[item][5]
                 inv_type = self.item_pool[item][4]
                 if prog_type == 2:
@@ -672,9 +672,9 @@ class World:
     # Returns a list of map lists, by boss
     def get_maps(self):
         maps = [[], [], [], [], [], [], []]
-        for map in MAPS:
-            if MAPS[map][0] >= 0 and not (MAPS[map][8] and (self.dungeon_shuffle or self.difficulty == 0)):    # Jumbo maps don't get rewards in dungeon shuffles or on Easy
-                boss = MAPS[map][1]
+        for map in self.maps:
+            if self.maps[map][0] >= 0 and not (self.maps[map][8] and (self.dungeon_shuffle or self.difficulty == 0)):    # Jumbo maps don't get rewards in dungeon shuffles or on Easy
+                boss = self.maps[map][1]
                 maps[boss].append(map)
         maps.pop(0)  # Non-dungeon maps aren't included
         return maps
@@ -720,13 +720,13 @@ class World:
         # Allocate rewards to maps
         for area in maps:
             random.shuffle(area)
-            MAPS[area[0]][2] = [rewards_tier1.pop(0), 1]
-            MAPS[area[1]][2] = [rewards_tier2.pop(0), 2]
-            MAPS[area[2]][2] = [rewards_tier3.pop(0), 3]
+            self.maps[area[0]][2] = [rewards_tier1.pop(0), 1]
+            self.maps[area[1]][2] = [rewards_tier2.pop(0), 2]
+            self.maps[area[2]][2] = [rewards_tier3.pop(0), 3]
             if rewards_tier4:
-                MAPS[area[3]][2] = [rewards_tier4.pop(0), 4]
+                self.maps[area[3]][2] = [rewards_tier4.pop(0), 4]
             else:
-                MAPS[area[3]][2] = [0, 4]
+                self.maps[area[3]][2] = [0, 4]
 
     # Place Mystic Statues in World
     def fill_statues(self, locations=[148, 149, 150, 151, 152, 153]):
@@ -1149,7 +1149,7 @@ class World:
                 is_free_ds_corridor = False
                 ds_node = next((n for n in subisland[0] if n in self.ds_nodes), 0)
                 if ds_node > 0:  # Island contains a DS node
-                    ds_loc = next(loc for loc in self.graph[ds_node][11] if ITEM_LOCATIONS[loc][1] == 2)
+                    ds_loc = next(loc for loc in self.graph[ds_node][11] if self.item_locations[loc][1] == 2)
                     if self.spawn_locations[ds_loc][3]:  # Island DS allows transform
                         if all(self.edge_formless(e) for n in subisland[0] for e in self.graph[n][12]):   # Island is internally-formless
                             is_free_ds_corridor = True
@@ -1203,7 +1203,7 @@ class World:
             for base_exit in foyer_exits:
                 if is_pymd_island:
                     new_corridor = next(i for i in elig_foyer_corridors if not any(
-                        ITEM_LOCATIONS[loc][1] == 2 for n in i[0] for loc in self.graph[n][11]))
+                        self.item_locations[loc][1] == 2 for n in i[0] for loc in self.graph[n][11]))
                 else:
                     new_corridor = next(i for i in elig_foyer_corridors)
                 elig_foyer_corridors.remove(new_corridor)
@@ -1288,9 +1288,9 @@ class World:
                 deadend_islands.remove(discard_island)
                 num_deadends -= 1
             self.item_pool[0][0] -= 1
-            ITEM_LOCATIONS[132][2] = True
-            ITEM_LOCATIONS[132][3] = 0
-            ITEM_LOCATIONS[132][7] = 0
+            self.item_locations[132][2] = True
+            self.item_locations[132][3] = 0
+            self.item_locations[132][7] = 0
             self.optional_nodes.append(442)
             self.link_exits(641, self.exits[641][0], False, False)
         if num_deadends > num_openings:
@@ -1351,8 +1351,8 @@ class World:
                 self.graph[n][1] = graph_free_access[n][:]
             self.items_collected = [800,802,803]+self.list_typed_items(types=[1, 2, 4, 5], shuffled_only=False, incl_placed=True)
             for loc in self.spawn_locations:
-                if self.spawn_locations[loc][3] and loc in ITEM_LOCATIONS and ITEM_LOCATIONS[loc][1] == 2:
-                    ITEM_LOCATIONS[loc][2] = True
+                if self.spawn_locations[loc][3] and loc in self.item_locations and self.item_locations[loc][1] == 2:
+                    self.item_locations[loc][2] = True
             self.update_graph(True, True, True)
             for s in foyer_nodesets:
                 for n in s:
@@ -1397,8 +1397,8 @@ class World:
         for n in self.graph:
             self.graph[n][1] = graph_free_access[n][:]
         for loc in self.spawn_locations:
-            if self.spawn_locations[loc][3] and loc in ITEM_LOCATIONS and ITEM_LOCATIONS[loc][1] == 2 and ITEM_LOCATIONS[loc][3] == 0:
-                ITEM_LOCATIONS[loc][2] = False
+            if self.spawn_locations[loc][3] and loc in self.item_locations and self.item_locations[loc][1] == 2 and self.item_locations[loc][3] == 0:
+                self.item_locations[loc][2] = False
 
     # Entrance randomizer
     def shuffle_exits(self):
@@ -1661,11 +1661,11 @@ class World:
             self.graph[x][4] = 0
             self.graph[x][9].clear()
         # Find nodes that contain Dark Spaces, and of those, which allow transform and don't contain an ability
-        self.ds_locations = [loc for loc in self.spawn_locations if loc in ITEM_LOCATIONS]
-        self.ds_nodes = [ITEM_LOCATIONS[loc][0] for loc in self.ds_locations]
+        self.ds_locations = [loc for loc in self.spawn_locations if loc in self.item_locations]
+        self.ds_nodes = [self.item_locations[loc][0] for loc in self.ds_locations]
         # Transform DSes are marked "filled" but contain item 0
-        self.txform_locations = [loc for loc in self.ds_locations if self.spawn_locations[loc][3] and ITEM_LOCATIONS[loc][2] and not ITEM_LOCATIONS[loc][3]]
-        self.txform_nodes = [ITEM_LOCATIONS[loc][0] for loc in self.txform_locations]
+        self.txform_locations = [loc for loc in self.ds_locations if self.spawn_locations[loc][3] and self.item_locations[loc][2] and not self.item_locations[loc][3]]
+        self.txform_nodes = [self.item_locations[loc][0] for loc in self.txform_locations]
         return True
 
     # Translates logic and exits to world graph
@@ -1895,9 +1895,9 @@ class World:
         for item in self.item_pool:
             if self.item_pool[item][6] == 0:
                 self.item_pool[item][6] = self.get_pool_id(item=item)
-        for loc in ITEM_LOCATIONS:
-            if ITEM_LOCATIONS[loc][7] == 0:
-                ITEM_LOCATIONS[loc][7] = self.get_pool_id(loc=loc)
+        for loc in self.item_locations:
+            if self.item_locations[loc][7] == 0:
+                self.item_locations[loc][7] = self.get_pool_id(loc=loc)
 
         # Save required items
         if 1 in self.dungeons_req:
@@ -1923,24 +1923,24 @@ class World:
         # No non-W abilities in towns
         non_w_abilities = [item for item in FORM_ITEMS[1] + FORM_ITEMS[2] if self.item_pool[item][6] == 2]
         for loc in self.spawn_locations:
-            if loc in ITEM_LOCATIONS and not self.spawn_locations[loc][3]:
-                ITEM_LOCATIONS[loc][4].extend(non_w_abilities)
+            if loc in self.item_locations and not self.spawn_locations[loc][3]:
+                self.item_locations[loc][4].extend(non_w_abilities)
         # Jeweler inventory isn't fun if full of trash or front-loaded with goodies
         for jeweler_loc in [0, 2, 4]:
-            ITEM_LOCATIONS[jeweler_loc + random.randint(0, 1)][4].extend([0, 1, 6, 41, 42])
+            self.item_locations[jeweler_loc + random.randint(0, 1)][4].extend([0, 1, 6, 41, 42])
         for jeweler_loc in [0, 1, 2, 3]:
             for item in self.item_pool:
-                if self.item_pool[item][7] > 1 + (2 * jeweler_loc) and item not in ITEM_LOCATIONS[jeweler_loc][4]:
-                    ITEM_LOCATIONS[jeweler_loc][4].append(item)
+                if self.item_pool[item][7] > 1 + (2 * jeweler_loc) and item not in self.item_locations[jeweler_loc][4]:
+                    self.item_locations[jeweler_loc][4].append(item)
         # Restrict bad item placement by difficulty
         if self.difficulty == 0:
             for awful_ds_loc in [31, 111, 146]:   # No abilities in awful Dark Spaces (Castoth, Kress 3, Upper Babel)
-                ITEM_LOCATIONS[awful_ds_loc][4].extend([61,62,63,64,65,66])
+                self.item_locations[awful_ds_loc][4].extend([61,62,63,64,65,66])
         if self.difficulty in [0,1]:
             for awful_loc in [136, 147, 740, 741]:   # Killer 6, Jeweler's Mansion
-                ITEM_LOCATIONS[awful_loc][4].extend(self.required_items)
+                self.item_locations[awful_loc][4].extend(self.required_items)
             if 1 not in self.statues and self.statue_req != StatueReq.PLAYER_CHOICE.value:
-                ITEM_LOCATIONS[32][4].extend(self.required_items)   # Gold Ship restricted if Statue 1 isn't required
+                self.item_locations[32][4].extend(self.required_items)   # Gold Ship restricted if Statue 1 isn't required
 
         # Clamp item progression penalty
         for item in self.item_pool:
@@ -1962,7 +1962,7 @@ class World:
         # Random start location
         if self.start_mode != "South Cape":
             self.start_loc = self.random_start()
-            self.info("Start location: " + str(ITEM_LOCATIONS[self.start_loc][6]))
+            self.info("Start location: " + str(self.item_locations[self.start_loc][6]))
             if self.start_loc == 47:  # Diamond Mine behind fences: fences are free
                 self.graph[131][1].append(130)
         if self.start_mode == "South Cape" and not self.entrance_shuffle:
@@ -1974,11 +1974,11 @@ class World:
             elif self.start_loc == 46:
                 start_node = 136  # Mine
             else:
-                start_node = ITEM_LOCATIONS[self.start_loc][0]
+                start_node = self.item_locations[self.start_loc][0]
             self.graph[0][1].append(start_node)
         start_map = self.spawn_locations[self.start_loc][1]
-        if start_map in MAPS:
-            MAPS[start_map][4] = 1  # Can only start in a dark map if cursed
+        if start_map in self.maps:
+            self.maps[start_map][4] = 1  # Can only start in a dark map if cursed
 
         # Randomize darkness and add edges to exit_logic if applicable
         if self.darkroom_level not in ["None", "All"]:
@@ -2072,20 +2072,20 @@ class World:
                 self.logic[new_edge_id] = new_edge
 
         # Convert locations that have logic requirements into graph nodes with logic edges
-        for loc in ITEM_LOCATIONS:
-            if ITEM_LOCATIONS[loc][9]:
-                outer_node_id = ITEM_LOCATIONS[loc][0]
+        for loc in self.item_locations:
+            if self.item_locations[loc][9]:
+                outer_node_id = self.item_locations[loc][0]
                 outer_node_type = self.graph[outer_node_id][2]
                 outer_node_info = self.graph[outer_node_id][3]
-                loc_name = ITEM_LOCATIONS[loc][6]
+                loc_name = self.item_locations[loc][6]
                 new_node_id = 1 + max(self.graph)
                 new_node = [False, [outer_node_id], outer_node_type, outer_node_info[:], 0, loc_name, [], False, [], [],
                             [], [], [], [], [], []]
                 new_edge_id = 1 + max(self.logic)
-                new_edge = [0, outer_node_id, new_node_id, 0, ITEM_LOCATIONS[loc][9][:], False]
+                new_edge = [0, outer_node_id, new_node_id, 0, self.item_locations[loc][9][:], False]
                 self.graph[new_node_id] = new_node
                 self.logic[new_edge_id] = new_edge
-                ITEM_LOCATIONS[loc][0] = new_node_id
+                self.item_locations[loc][0] = new_node_id
 
         # If no orb rando, assign default locs for all orbs (item ID == loc ID).
         # If additionally starting with flute, give the free orbs as free items.
@@ -2300,8 +2300,8 @@ class World:
         self.delete_objects(edges=free_edges, with_close=True)
 
         # Incorporate item locations and logic edges into world graph
-        for x in ITEM_LOCATIONS:
-            self.graph[ITEM_LOCATIONS[x][0]][11].append(x)
+        for x in self.item_locations:
+            self.graph[self.item_locations[x][0]][11].append(x)
         for y in self.logic:
             if self.logic[y][0] != -1:
                 self.graph[self.logic[y][1]][12].append(y)
@@ -2340,7 +2340,7 @@ class World:
     # Exits remain in self.exits because, when shuffling, other exits still need to act-like the deleted exit.
     def delete_objects(self, items=[], locs=[], nodes=[], edges=[], exits=[], with_close=True):
         del_items = [x for x in items if x in self.item_pool]
-        del_locs = [x for x in locs if x in ITEM_LOCATIONS]
+        del_locs = [x for x in locs if x in self.item_locations]
         del_nodes = [x for x in nodes if x in self.graph and x > 0]
         del_edges = [x for x in edges if x in self.logic]
         del_exits = [x for x in exits if x in self.exits and x not in self.deleted_exits]
@@ -2358,7 +2358,7 @@ class World:
             del self.item_pool[item]
         for node in set(del_nodes):
             self.deleted_graph[node] = self.graph[node]
-            affected_locs = [loc for loc in ITEM_LOCATIONS if ITEM_LOCATIONS[loc][0] == node]
+            affected_locs = [loc for loc in self.item_locations if self.item_locations[loc][0] == node]
             affected_nodes = [n for n in self.graph if
                               node in self.graph[n][1] + self.graph[n][8] + self.graph[n][9] + self.graph[n][10]]
             affected_edges = [e for e in self.logic if node == self.logic[e][1] or node == self.logic[e][2]]
@@ -2375,11 +2375,11 @@ class World:
                     self.exits[exit][4] = -2  # Exit dest becomes "deleted"
             del self.graph[node]
         for loc in set(del_locs):
-            self.deleted_item_locations[loc] = ITEM_LOCATIONS[loc]
+            self.deleted_item_locations[loc] = self.item_locations[loc]
             affected_nodes = [n for n in self.graph if loc in self.graph[n][11]]
             for node in affected_nodes:
                 self.graph[node][11].remove(loc)
-            del ITEM_LOCATIONS[loc]
+            del self.item_locations[loc]
         for edge in set(del_edges):
             self.deleted_logic[edge] = self.logic[edge]
             affected_nodes = [n for n in self.graph if edge in self.graph[n][12] + self.graph[n][13]]
@@ -2476,9 +2476,9 @@ class World:
             if not ds_items:
                 # All remaining unoccupied dungeon DSes are for transform
                 for loc in self.spawn_locations:
-                    if self.spawn_locations[loc][3] and loc in ITEM_LOCATIONS and ITEM_LOCATIONS[loc][
-                        1] == 2 and not ITEM_LOCATIONS[loc][3]:
-                        ITEM_LOCATIONS[loc][2] = True
+                    if self.spawn_locations[loc][3] and loc in self.item_locations and self.item_locations[loc][
+                        1] == 2 and not self.item_locations[loc][3]:
+                        self.item_locations[loc][2] = True
                 self.verbose("All remaining Dark Spaces are locked for transform")
                 self.update_graph(True, True, False)
                 if self.logic_mode != "Completable":
@@ -2499,8 +2499,8 @@ class World:
                     for ds_node in self.graph[node][9]:
                         if not self.graph[ds_node][0]:
                             continue
-                        ds_loc = next(loc for loc in self.graph[ds_node][11] if ITEM_LOCATIONS[loc][1] == 2)
-                        if self.graph[ds_node][0] and not ITEM_LOCATIONS[ds_loc][2]:
+                        ds_loc = next(loc for loc in self.graph[ds_node][11] if self.item_locations[loc][1] == 2)
+                        if self.graph[ds_node][0] and not self.item_locations[ds_loc][2]:
                             if ds_node not in f_nodes_under_ds_node:
                                 f_nodes_under_ds_node[ds_node] = set()
                             f_nodes_under_ds_node[ds_node].add(node)
@@ -2508,14 +2508,14 @@ class World:
                     # Lock the DS that covers the most remaining f nodes, breaking ties randomly
                     lock_node = max(f_nodes_under_ds_node, key=lambda ds_node: len(
                         f_missing_nodes.intersection(f_nodes_under_ds_node[ds_node])) + random.random())
-                    lock_loc = next(loc for loc in ITEM_LOCATIONS if
-                                    ITEM_LOCATIONS[loc][0] == lock_node and ITEM_LOCATIONS[loc][1] == 2)
-                    ITEM_LOCATIONS[lock_loc][
+                    lock_loc = next(loc for loc in self.item_locations if
+                                    self.item_locations[loc][0] == lock_node and self.item_locations[loc][1] == 2)
+                    self.item_locations[lock_loc][
                         2] = True  # Mark the DS as occupied, remove it from the pool, and clear its contents if any
-                    if ITEM_LOCATIONS[lock_loc][3]:
+                    if self.item_locations[lock_loc][3]:
                         self.unfill_item(lock_loc)
-                    ITEM_LOCATIONS[lock_loc][7] = 0
-                    self.info(" Locked for transform: " + str(ITEM_LOCATIONS[lock_loc][6]))
+                    self.item_locations[lock_loc][7] = 0
+                    self.info(" Locked for transform: " + str(self.item_locations[lock_loc][6]))
                     made_progress = True
                     f_missing_nodes = f_missing_nodes.difference(f_nodes_under_ds_node[lock_node])
                     for covered_node in f_nodes_under_ds_node[lock_node]:
@@ -2583,8 +2583,8 @@ class World:
         self.reset_progress(True)
         self.update_graph(True, True, False)  # no need to recalculate exits again
         high_penalty_items = {item for item in self.item_pool if self.item_pool[item][7] > 1}
-        for loc in ITEM_LOCATIONS:
-            ITEM_LOCATIONS[loc][8] = MAX_CYCLES  # Initialize discovered-on-cycle value
+        for loc in self.item_locations:
+            self.item_locations[loc][8] = MAX_CYCLES  # Initialize discovered-on-cycle value
         done = False
         goal = False
         cycle = 0
@@ -2596,12 +2596,12 @@ class World:
                 return False
             self.traverse()
             # Good items resist being placed early; if starting in a town with lots of checks available, very good items can't be placed early at all
-            discovered_locs = [loc for loc in ITEM_LOCATIONS if self.graph[ITEM_LOCATIONS[loc][0]][0] and ITEM_LOCATIONS[loc][8] > cycle]
+            discovered_locs = [loc for loc in self.item_locations if self.graph[self.item_locations[loc][0]][0] and self.item_locations[loc][8] > cycle]
             for loc in discovered_locs:
-                ITEM_LOCATIONS[loc][8] = cycle
+                self.item_locations[loc][8] = cycle
                 for item in high_penalty_items:
-                    if (item not in ITEM_LOCATIONS[loc][4]) and (cycle < (self.item_pool[item][7] * 1.5 / PROGRESS_ADJ[self.difficulty])) and (self.spawn_locations[self.start_loc][0] == "Safe"):
-                        ITEM_LOCATIONS[loc][4].append(item)
+                    if (item not in self.item_locations[loc][4]) and (cycle < (self.item_pool[item][7] * 1.5 / PROGRESS_ADJ[self.difficulty])) and (self.spawn_locations[self.start_loc][0] == "Safe"):
+                        self.item_locations[loc][4].append(item)
             if len(self.get_inventory()) > MAX_INVENTORY:
                 goal = False
                 self.warn("Inventory capacity exceeded")
@@ -2730,7 +2730,7 @@ class World:
         spoiler["goal"] = str(self.goal)
         spoiler["town_shuffle"] = str(self.town_shuffle)
         spoiler["dungeon_shuffle"] = str(self.dungeon_shuffle)
-        spoiler["start_location"] = ITEM_LOCATIONS[self.start_loc][6].strip()
+        spoiler["start_location"] = self.item_locations[self.start_loc][6].strip()
         spoiler["logic"] = str(self.logic_mode)
         spoiler["difficulty"] = str(difficulty_txt)
         if self.statue_req == StatueReq.PLAYER_CHOICE.value:
@@ -2744,20 +2744,20 @@ class World:
         spoiler["hieroglyph_order"] = self.hieroglyphs
 
         items = []
-        for x in ITEM_LOCATIONS:
-            loc_type = ITEM_LOCATIONS[x][1]
+        for x in self.item_locations:
+            loc_type = self.item_locations[x][1]
             if loc_type in [1, 2, 3] or (self.orb_rando != "None" and loc_type == 5):
-                item = ITEM_LOCATIONS[x][3]
-                location_name = ITEM_LOCATIONS[x][6].strip()
+                item = self.item_locations[x][3]
+                location_name = self.item_locations[x][6].strip()
                 item_name = self.item_pool[item][3]
                 items.append({"location": location_name, "name": item_name})
         spoiler["items"] = items
 
         if "Overworld Shuffle" in self.variant:
             overworld_links = []
-            for continent_id, continent_data in OVERWORLD_MENUS.items():
+            for continent_id, continent_data in self.overworld_menus.items():
                 continent_name = continent_data[5]
-                region_name = OVERWORLD_MENUS[continent_data[0]][6]
+                region_name = self.overworld_menus[continent_data[0]][6]
                 region_name = region_name.replace('_', '')
                 overworld_links.append({"region": region_name, "continent": continent_name})
             spoiler["overworld_entrances"] = overworld_links
@@ -2800,9 +2800,9 @@ class World:
         self.info("Hieroglyph Order                       >  " + str(self.hieroglyphs))
         self.info("")
 
-        for x in ITEM_LOCATIONS:
-            item = ITEM_LOCATIONS[x][3]
-            location_name = ITEM_LOCATIONS[x][6]
+        for x in self.item_locations:
+            item = self.item_locations[x][3]
+            location_name = self.item_locations[x][6]
             item_name = self.item_pool[item][3]
             self.info(str(location_name) + "  >  " + str(item_name))
 
@@ -2818,10 +2818,10 @@ class World:
             self.asar_defines["RemovedRoomRewardExpertFlag" + str(i)] = 0
             self.asar_defines["RemovedRoomRewardAdvancedFlag" + str(i)] = 0
             self.asar_defines["RemovedRoomRewardIntermediateFlag" + str(i)] = 0
-        for map in MAPS:
-            reward_tier = MAPS[map][2][1]
+        for map in self.maps:
+            reward_tier = self.maps[map][2][1]
             if reward_tier > 0:
-                reward = MAPS[map][2][0]
+                reward = self.maps[map][2][0]
                 self.asar_defines["RoomClearReward" + format(map, "02X")] = reward
                 # Populate player level logic
                 if reward_tier == 4:
@@ -2838,8 +2838,8 @@ class World:
         ds_loc_idx = 1
         item_db = {}
         loc_db = {}
-        for loc in ITEM_LOCATIONS:
-            loc_db[loc] = ITEM_LOCATIONS[loc]
+        for loc in self.item_locations:
+            loc_db[loc] = self.item_locations[loc]
         for loc in self.deleted_item_locations:  # Currently used for deleted (free) orb locs
             loc_db[loc] = self.deleted_item_locations[loc]
         for item in self.item_pool:
@@ -2887,15 +2887,15 @@ class World:
             self.asar_defines["StartLocationId"] = self.start_loc
 
         # Overworld
-        for entry in OVERWORLD_MENUS:
+        for entry in self.overworld_menus:
             new_entry = entry
-            if OVERWORLD_MENUS[entry][0] > 0:
-                new_entry = OVERWORLD_MENUS[entry][0]
-            old_label = OVERWORLD_MENUS[entry][4]
-            new_label = OVERWORLD_MENUS[new_entry][4]
+            if self.overworld_menus[entry][0] > 0:
+                new_entry = self.overworld_menus[entry][0]
+            old_label = self.overworld_menus[entry][4]
+            new_label = self.overworld_menus[new_entry][4]
             self.asar_defines["OverworldShuffle" + old_label + "Label"] = new_label
-            self.asar_defines["OverworldShuffle" + old_label + "Text"] = OVERWORLD_MENUS[new_entry][6]
-            self.asar_defines["OverworldShuffle" + new_label + "MenuId"] = OVERWORLD_MENUS[entry][1]
+            self.asar_defines["OverworldShuffle" + old_label + "Text"] = self.overworld_menus[new_entry][6]
+            self.asar_defines["OverworldShuffle" + new_label + "MenuId"] = self.overworld_menus[entry][1]
 
         # Entrances
         for exit in self.exits:
@@ -2951,7 +2951,7 @@ class World:
                     this_cluster_idx += 1
             # If that didn't work or doesn't apply, add a new cluster
             if len(self.all_darkrooms) < self.max_darkrooms:
-                darkness_sources = [m for m in MAPS if MAPS[m][4] == 3 and m not in self.all_darkrooms]
+                darkness_sources = [m for m in self.maps if self.maps[m][4] == 3 and m not in self.all_darkrooms]
                 random.shuffle(darkness_sources)
                 new_cluster = []
                 new_source = darkness_sources.pop(0)
@@ -2985,8 +2985,8 @@ class World:
                 types = [2, 3, 4]
             else:
                 types = [1, 2, 3, 4]
-        return [sink for src in cluster for sink in MAPS[src][9] if
-                MAPS[sink][4] in types and sink not in self.all_darkrooms]
+        return [sink for src in cluster for sink in self.maps[src][9] if
+                self.maps[sink][4] in types and sink not in self.all_darkrooms]
 
     # Expands the darkness cluster into all adjacent rooms that inherit darkness.
     def dr_spread_to_free_sinks(self, cluster):
@@ -3030,25 +3030,25 @@ class World:
         for continent in new_continents:
             random.shuffle(continent)
 
-        OVERWORLD_MENUS[1][0] = new_continents[0][0]
-        OVERWORLD_MENUS[2][0] = new_continents[0][1]
-        OVERWORLD_MENUS[3][0] = new_continents[0][2]
-        OVERWORLD_MENUS[4][0] = new_continents[0][3]
-        OVERWORLD_MENUS[5][0] = new_continents[0][4]
-        OVERWORLD_MENUS[6][0] = new_continents[1][0]
-        OVERWORLD_MENUS[7][0] = new_continents[1][1]
-        OVERWORLD_MENUS[8][0] = new_continents[1][2]
-        OVERWORLD_MENUS[9][0] = new_continents[1][3]
-        OVERWORLD_MENUS[10][0] = new_continents[1][4]
-        OVERWORLD_MENUS[11][0] = new_continents[2][0]
-        OVERWORLD_MENUS[12][0] = new_continents[2][1]
-        OVERWORLD_MENUS[13][0] = new_continents[2][2]
-        OVERWORLD_MENUS[14][0] = new_continents[3][0]
-        OVERWORLD_MENUS[15][0] = new_continents[3][1]
-        OVERWORLD_MENUS[16][0] = new_continents[3][2]
-        OVERWORLD_MENUS[17][0] = new_continents[3][3]
-        OVERWORLD_MENUS[18][0] = new_continents[4][0]
-        OVERWORLD_MENUS[19][0] = new_continents[4][1]
+        self.overworld_menus[1][0] = new_continents[0][0]
+        self.overworld_menus[2][0] = new_continents[0][1]
+        self.overworld_menus[3][0] = new_continents[0][2]
+        self.overworld_menus[4][0] = new_continents[0][3]
+        self.overworld_menus[5][0] = new_continents[0][4]
+        self.overworld_menus[6][0] = new_continents[1][0]
+        self.overworld_menus[7][0] = new_continents[1][1]
+        self.overworld_menus[8][0] = new_continents[1][2]
+        self.overworld_menus[9][0] = new_continents[1][3]
+        self.overworld_menus[10][0] = new_continents[1][4]
+        self.overworld_menus[11][0] = new_continents[2][0]
+        self.overworld_menus[12][0] = new_continents[2][1]
+        self.overworld_menus[13][0] = new_continents[2][2]
+        self.overworld_menus[14][0] = new_continents[3][0]
+        self.overworld_menus[15][0] = new_continents[3][1]
+        self.overworld_menus[16][0] = new_continents[3][2]
+        self.overworld_menus[17][0] = new_continents[3][3]
+        self.overworld_menus[18][0] = new_continents[4][0]
+        self.overworld_menus[19][0] = new_continents[4][1]
 
         self.graph[10][1].clear()
         self.graph[11][1].clear()
@@ -3063,11 +3063,11 @@ class World:
         self.graph[14][10].clear()
 
         # Add new overworld to the graph
-        for entry in OVERWORLD_MENUS:
-            new_entry = OVERWORLD_MENUS[entry][0]
-            self.graph[OVERWORLD_MENUS[entry][2]][1].append(OVERWORLD_MENUS[new_entry][3])
-            self.graph[OVERWORLD_MENUS[new_entry][3]][1].remove(OVERWORLD_MENUS[new_entry][2])
-            self.graph[OVERWORLD_MENUS[new_entry][3]][1].append(OVERWORLD_MENUS[entry][2])
+        for entry in self.overworld_menus:
+            new_entry = self.overworld_menus[entry][0]
+            self.graph[self.overworld_menus[entry][2]][1].append(self.overworld_menus[new_entry][3])
+            self.graph[self.overworld_menus[new_entry][3]][1].remove(self.overworld_menus[new_entry][2])
+            self.graph[self.overworld_menus[new_entry][3]][1].append(self.overworld_menus[entry][2])
 
         return True
 
@@ -3106,16 +3106,16 @@ class World:
                 i += 1
 
         # Randomize enemy spritesets
-        for map in MAPS:
-            if MAPS[map][0] < 0:
+        for map in self.maps:
+            if self.maps[map][0] < 0:
                 continue
             complex_ct = 0
-            oldset = MAPS[map][0]
+            oldset = self.maps[map][0]
             # Determine new enemyset for map
             if self.enemizer == "Limited":
                 sets = [oldset]
             else:
-                sets = [set for set in enemysets if set not in MAPS[map][7]]
+                sets = [set for set in enemysets if set not in self.maps[map][7]]
 
             random.shuffle(sets)
             newset = sets[0]
@@ -3133,8 +3133,8 @@ class World:
             self.asar_defines["Map" + format(map, "02X") + "CardMonsters"] = "!" + ENEMY_SETS[newset][0]
 
             # Randomize each enemy in map
-            first_monster_id = MAPS[map][5]
-            last_monster_id = MAPS[map][6]
+            first_monster_id = self.maps[map][5]
+            last_monster_id = self.maps[map][6]
             this_monster_id = first_monster_id
             while this_monster_id <= last_monster_id:
                 if this_monster_id not in DEFAULT_ENEMIES:
@@ -3357,8 +3357,11 @@ class World:
         self.deleted_item_locations = {}
 
         self.deleted_graph = {}
-        # self.graph is modified. GRAPH is the basis but the intention is mutability
-        self.graph = GRAPH
+
+        self.graph = get_graph()
+        self.maps = get_maps()
+        self.item_locations = get_item_locations()
+        self.overworld_menus = get_overworld_menus()
 
         self.deleted_logic = {}
         self.logic = get_logic(gem, self.goal, self.difficulty, self.dungeon_shuffle, self.coupled_exits, self.enemizer, self.statues_required, self.kara, settings.allow_glitches)
