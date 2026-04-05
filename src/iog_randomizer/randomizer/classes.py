@@ -19,7 +19,7 @@ from .data.item_locations import get_item_locations
 from .data.item_pool import get_item_pool
 from .data.logic import get_logic
 from .data.maps import get_maps
-from .data.overworld_menus import OVERWORLD_MENUS
+from .data.overworld_menus import get_overworld_menus
 from .data.spawn_locations import get_spawn_locations
 from .data.spoiler_labels import SPOILER_LABELS
 
@@ -2755,9 +2755,9 @@ class World:
 
         if "Overworld Shuffle" in self.variant:
             overworld_links = []
-            for continent_id, continent_data in OVERWORLD_MENUS.items():
+            for continent_id, continent_data in self.overworld_menus.items():
                 continent_name = continent_data[5]
-                region_name = OVERWORLD_MENUS[continent_data[0]][6]
+                region_name = self.overworld_menus[continent_data[0]][6]
                 region_name = region_name.replace('_', '')
                 overworld_links.append({"region": region_name, "continent": continent_name})
             spoiler["overworld_entrances"] = overworld_links
@@ -2887,15 +2887,15 @@ class World:
             self.asar_defines["StartLocationId"] = self.start_loc
 
         # Overworld
-        for entry in OVERWORLD_MENUS:
+        for entry in self.overworld_menus:
             new_entry = entry
-            if OVERWORLD_MENUS[entry][0] > 0:
-                new_entry = OVERWORLD_MENUS[entry][0]
-            old_label = OVERWORLD_MENUS[entry][4]
-            new_label = OVERWORLD_MENUS[new_entry][4]
+            if self.overworld_menus[entry][0] > 0:
+                new_entry = self.overworld_menus[entry][0]
+            old_label = self.overworld_menus[entry][4]
+            new_label = self.overworld_menus[new_entry][4]
             self.asar_defines["OverworldShuffle" + old_label + "Label"] = new_label
-            self.asar_defines["OverworldShuffle" + old_label + "Text"] = OVERWORLD_MENUS[new_entry][6]
-            self.asar_defines["OverworldShuffle" + new_label + "MenuId"] = OVERWORLD_MENUS[entry][1]
+            self.asar_defines["OverworldShuffle" + old_label + "Text"] = self.overworld_menus[new_entry][6]
+            self.asar_defines["OverworldShuffle" + new_label + "MenuId"] = self.overworld_menus[entry][1]
 
         # Entrances
         for exit in self.exits:
@@ -3030,25 +3030,25 @@ class World:
         for continent in new_continents:
             random.shuffle(continent)
 
-        OVERWORLD_MENUS[1][0] = new_continents[0][0]
-        OVERWORLD_MENUS[2][0] = new_continents[0][1]
-        OVERWORLD_MENUS[3][0] = new_continents[0][2]
-        OVERWORLD_MENUS[4][0] = new_continents[0][3]
-        OVERWORLD_MENUS[5][0] = new_continents[0][4]
-        OVERWORLD_MENUS[6][0] = new_continents[1][0]
-        OVERWORLD_MENUS[7][0] = new_continents[1][1]
-        OVERWORLD_MENUS[8][0] = new_continents[1][2]
-        OVERWORLD_MENUS[9][0] = new_continents[1][3]
-        OVERWORLD_MENUS[10][0] = new_continents[1][4]
-        OVERWORLD_MENUS[11][0] = new_continents[2][0]
-        OVERWORLD_MENUS[12][0] = new_continents[2][1]
-        OVERWORLD_MENUS[13][0] = new_continents[2][2]
-        OVERWORLD_MENUS[14][0] = new_continents[3][0]
-        OVERWORLD_MENUS[15][0] = new_continents[3][1]
-        OVERWORLD_MENUS[16][0] = new_continents[3][2]
-        OVERWORLD_MENUS[17][0] = new_continents[3][3]
-        OVERWORLD_MENUS[18][0] = new_continents[4][0]
-        OVERWORLD_MENUS[19][0] = new_continents[4][1]
+        self.overworld_menus[1][0] = new_continents[0][0]
+        self.overworld_menus[2][0] = new_continents[0][1]
+        self.overworld_menus[3][0] = new_continents[0][2]
+        self.overworld_menus[4][0] = new_continents[0][3]
+        self.overworld_menus[5][0] = new_continents[0][4]
+        self.overworld_menus[6][0] = new_continents[1][0]
+        self.overworld_menus[7][0] = new_continents[1][1]
+        self.overworld_menus[8][0] = new_continents[1][2]
+        self.overworld_menus[9][0] = new_continents[1][3]
+        self.overworld_menus[10][0] = new_continents[1][4]
+        self.overworld_menus[11][0] = new_continents[2][0]
+        self.overworld_menus[12][0] = new_continents[2][1]
+        self.overworld_menus[13][0] = new_continents[2][2]
+        self.overworld_menus[14][0] = new_continents[3][0]
+        self.overworld_menus[15][0] = new_continents[3][1]
+        self.overworld_menus[16][0] = new_continents[3][2]
+        self.overworld_menus[17][0] = new_continents[3][3]
+        self.overworld_menus[18][0] = new_continents[4][0]
+        self.overworld_menus[19][0] = new_continents[4][1]
 
         self.graph[10][1].clear()
         self.graph[11][1].clear()
@@ -3063,11 +3063,11 @@ class World:
         self.graph[14][10].clear()
 
         # Add new overworld to the graph
-        for entry in OVERWORLD_MENUS:
-            new_entry = OVERWORLD_MENUS[entry][0]
-            self.graph[OVERWORLD_MENUS[entry][2]][1].append(OVERWORLD_MENUS[new_entry][3])
-            self.graph[OVERWORLD_MENUS[new_entry][3]][1].remove(OVERWORLD_MENUS[new_entry][2])
-            self.graph[OVERWORLD_MENUS[new_entry][3]][1].append(OVERWORLD_MENUS[entry][2])
+        for entry in self.overworld_menus:
+            new_entry = self.overworld_menus[entry][0]
+            self.graph[self.overworld_menus[entry][2]][1].append(self.overworld_menus[new_entry][3])
+            self.graph[self.overworld_menus[new_entry][3]][1].remove(self.overworld_menus[new_entry][2])
+            self.graph[self.overworld_menus[new_entry][3]][1].append(self.overworld_menus[entry][2])
 
         return True
 
@@ -3358,10 +3358,10 @@ class World:
 
         self.deleted_graph = {}
 
-        # self.graph is modified. get_graph() is the basis but the intention is mutability
         self.graph = get_graph()
         self.maps = get_maps()
         self.item_locations = get_item_locations()
+        self.overworld_menus = get_overworld_menus()
 
         self.deleted_logic = {}
         self.logic = get_logic(gem, self.goal, self.difficulty, self.dungeon_shuffle, self.coupled_exits, self.enemizer, self.statues_required, self.kara, settings.allow_glitches)
