@@ -614,11 +614,8 @@ class Randomizer:
             elif self.seed_adj > 0:
                 if settings.printlevel.value > -1:
                     print("Trying again... attempt", self.seed_adj + 1)
-
-            print(f"World({json.dumps(settings.__dict__, indent=1)}, {statues_required}, {statues}, {statue_req}, {kara_location}, {gem}, {[inca_x + 1, inca_y + 1]}, {hieroglyph_order}, {boss_order})")
             self.w = World(settings, statues_required, statues, statue_req, kara_location, gem,
                            [inca_x + 1, inca_y + 1], hieroglyph_order, boss_order)
-            print(f"self.w.randomize({self.seed_adj}, {settings.printlevel.value}, {settings.break_on_error}, {settings.break_on_init})")
             done = self.w.randomize(self.seed_adj, settings.printlevel.value, settings.break_on_error,
                                     settings.break_on_init)
             if profile_base_filepath != "":

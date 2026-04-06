@@ -50,11 +50,6 @@ def get_world(settings) -> World:
         boss_order=[1, 2, 3, 4, 5, 6, 7]
     )
 
-'''
-During a refactor, there was a bug where module imported data was mutatable.
-This test will catch a specific reproducible scenario ensuring a second 
-different world can be generated with current state.
-'''
 def test_can_randomize_with_different_settings_twice():
     world = get_world(get_default_randomizer_data())
     done = world.randomize(seed_adj=0, printlevel=PrintLevel.SILENT, break_on_error=True, break_on_init=False)
@@ -63,20 +58,13 @@ def test_can_randomize_with_different_settings_twice():
     changed_settings = get_default_randomizer_data()
     changed_settings.ohko = True
     world_changed = get_world(changed_settings)
-    done_changed = world_changed.randomize(seed_adj=0, printlevel=PrintLevel.SILENT, break_on_error=True, break_on_init=False)
-    assert done_changed == True
+    assert world_changed.randomize(seed_adj=0, printlevel=PrintLevel.SILENT, break_on_error=True, break_on_init=False)
 
-'''
-During a refactor, there was a bug where module imported data was mutatable.
-This test will catch a specific reproducible scenario ensuring two worlds with the same settings will match.
-'''
 def test_can_randomize_with_same_settings_twice():
     world = get_world(get_default_randomizer_data())
-    done = world.randomize(seed_adj=0, printlevel=PrintLevel.SILENT, break_on_error=True, break_on_init=False)
-    assert done == True
+    assert world.randomize(seed_adj=0, printlevel=PrintLevel.SILENT, break_on_error=True, break_on_init=False)
 
     second_world = get_world(get_default_randomizer_data())
-    second_world_done = second_world.randomize(seed_adj=0, printlevel=PrintLevel.SILENT, break_on_error=True, break_on_init=False)
-    assert second_world_done == True
+    assert second_world.randomize(seed_adj=0, printlevel=PrintLevel.SILENT, break_on_error=True, break_on_init=False)
 
     assert world == second_world
