@@ -52,8 +52,7 @@ def get_world(settings) -> World:
 
 def test_can_randomize_with_different_settings_twice():
     world = get_world(get_default_randomizer_data())
-    done = world.randomize(seed_adj=0, printlevel=PrintLevel.SILENT, break_on_error=True, break_on_init=False)
-    assert done == True
+    assert world.randomize(seed_adj=0, printlevel=PrintLevel.SILENT, break_on_error=True, break_on_init=False)
 
     changed_settings = get_default_randomizer_data()
     changed_settings.ohko = True
