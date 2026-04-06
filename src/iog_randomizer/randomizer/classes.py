@@ -29,6 +29,12 @@ MAX_CYCLES = 200
 
 
 class World:
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.__dict__ == other.__dict__
+        else:
+            return False
+
     # Severity: 0 = error/breakpoint, 1 = warning, 2 = info, 3 = verbose.
     def log(self, message, severity=0):
         prefixes = ["Error: ", "Warning: ", "", ""]

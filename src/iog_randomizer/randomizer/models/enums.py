@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import IntEnum, StrEnum
 
 
-class DarkRooms(Enum):
+class DarkRooms(IntEnum):
     ALLCURSED = -4
     MANYCURSED = -3
     SOMECURSED = -2
@@ -13,21 +13,21 @@ class DarkRooms(Enum):
     ALL = 4
 
 
-class Difficulty(Enum):
+class Difficulty(IntEnum):
     EASY = 0
     NORMAL = 1
     HARD = 2
     EXTREME = 3
 
 
-class DungeonShuffle(Enum):
+class DungeonShuffle(IntEnum):
     NONE = 0
     BASIC = 1
     CHAOS = 2
     CLUSTERED = 3
 
 
-class Enemizer(Enum):
+class Enemizer(IntEnum):
     NONE = 0
     LIMITED = 1
     BALANCED = 2
@@ -35,45 +35,45 @@ class Enemizer(Enum):
     INSANE = 4
 
 
-class EntranceShuffle(Enum):
+class EntranceShuffle(IntEnum):
     NONE = 0
     COUPLED = 1
     UNCOUPLED = 2
 
 
-class FluteOpt(Enum):
+class FluteOpt(IntEnum):
     START = 0
     SHUFFLE = 1
     FLUTELESS = 2
 
 
-class Goal(Enum):
+class Goal(IntEnum):
     DARK_GAIA = 0
     RED_JEWEL_HUNT = 1
     APO_GAIA = 2
     RANDOM_GAIA = 3
 
 
-class Level(Enum):
+class Level(IntEnum):
     BEGINNER = 0
     INTERMEDIATE = 1
     ADVANCED = 2
     EXPERT = 3
 
 
-class Logic(Enum):
+class Logic(IntEnum):
     COMPLETABLE = 0
     BEATABLE = 1
     CHAOS = 2
 
 
-class OrbRando(Enum):
+class OrbRando(IntEnum):
     NONE = 0
     BASIC = 1
     ORBSANITY = 2
 
 
-class Sprite(Enum):
+class Sprite(StrEnum):
     WILL = "will"
     BAGU = "bagu"
     INVISIBLE = "invisible"
@@ -82,20 +82,20 @@ class Sprite(Enum):
     SYE = "sye"
 
 
-class StartLocation(Enum):
+class StartLocation(IntEnum):
     SOUTH_CAPE = 0
     SAFE = 1
     UNSAFE = 2
     FORCED_UNSAFE = 3
 
 
-class StatueReq(Enum):
+class StatueReq(IntEnum):
     GAME_CHOICE = 0
     PLAYER_CHOICE = 1
     RANDOM_CHOICE = 2
 
 
-class PrintLevel(Enum):
+class PrintLevel(IntEnum):
     SILENT = -1
     ERROR = 0
     WARN = 1
